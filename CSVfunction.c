@@ -1,30 +1,30 @@
 #include "CSVfunction.h"
 // Инициализация структуры CSVAddressId
-struct CSVAddressId* initCSVAddressId(const char* address, const size_t id){
-    struct CSVAddressId *csvAddressId = malloc(SIZEOF_CSV_ADDRESS_ID);
+struct CSVAddressId* initCSVAddressId(const char *address, const size_t id){
+    struct CSVAddressId *csvAddressId = malloc(sizeof(struct CSVAddressId));
     if (csvAddressId == NULL){
         printf("Error, initCSVAddressId(), malloc == NULL");
         exit(EXIT_FAILURE);
     } 
-    csvAddressId->address = malloc((strlen(address)+1) * SIZEOF_CHAR);
+    csvAddressId->address = malloc((strlen(address)+1));
     if (csvAddressId->address == NULL){
         printf("Error, initCSVAddressId(), malloc == NULL");
         exit(EXIT_FAILURE);
     } 
-    strcpy(csvAddressId->address, address);
+    strcpy(csvAddressId->address,address);
     csvAddressId->id = id;
     return csvAddressId;
 }
 // Инициализация корня бинарного дерева
-struct BinTreeNode* initBinTree(const char* address, const size_t *id){
-    struct BinTreeNode *root = malloc(SIZEOF_BIN_TREE);
+struct BinTreeNode* initBinTree(const char *address, const size_t id){
+    struct BinTreeNode *root = malloc(sizeof(struct BinTreeNode));
     if (root == NULL){
         printf("Error, initBinTree(), malloc == NULL");
         exit(EXIT_FAILURE);
     } 
     root->left = NULL;
     root->right = NULL;
-    root->data = initCSVAddressId(address, *id);
+    root->data = initCSVAddressId(address, id);
     return root;
 }
 // Деление адреса типа А1 на две строки типа А и 1
@@ -91,19 +91,26 @@ struct BinTreeNode* addToBinTree(struct BinTreeNode* root, struct BinTreeNode* n
     } 
 }
 // Метод возврата сортированного массив по бинарному дереву (отсортированный массив)
-struct DynamicArray *returnDynamicArrayFromBinTree(const struct BinTreeNode* root, struct DynamicArray * arr){
+struct DynamicArray *returnDynamicArrayFromBinTree(struct BinTreeNode* root, struct DynamicArray * arr){
     if (root->left != NULL){
         returnDynamicArrayFromBinTree(root->left, arr);
+        //free((struct CSVAddressId*)root->left->data->address);
+        free(root->left);
+        root->left = NULL;
     }
     addToDynamicArray(arr, root->data);
     if (root->right != NULL){
         returnDynamicArrayFromBinTree(root->right, arr);
+        //free((struct CSVAddressId*)root->right->data->address);
+        free(root->right);
+        root->right = NULL;
     }
+
     return arr;
 }
 // Инициализация CSVFormat
-void * initCSVFormat(const char *str){
-    struct CSVFormat *CSV = malloc(SIZEOF_CSV_FORMAT);
+struct CSVFormat*initCSVFormat(const char *str){
+    struct CSVFormat *CSV = malloc(sizeof(struct CSVFormat));
     if (CSV == NULL){
         printf("Error, initCSVFormat(), malloc == NULL");
         exit(EXIT_FAILURE);
@@ -114,7 +121,8 @@ void * initCSVFormat(const char *str){
             printf("Error, initCSVFormat(), malloc == NULL");
             exit(EXIT_FAILURE);
         }       
-        CSV->formula = strncpy(CSV->formula, str, strlen(str) + 1);
+        //CSV->formula = strncpy(CSV->formula, str, strlen(str) + 1);
+        strcpy(CSV->formula, str);
         CSV->value = 0;
     }
     else {
@@ -133,11 +141,11 @@ void readFileFormCSF(const char* pathCSV, struct DynamicArray *arrCSVTable, stru
         exit(EXIT_FAILURE);
     }
     int numColumns  = 0, 
-        numRows    = 0, 
+        numRows     = 0, 
         maxColumns  = 0, 
         bufferIndex = 0;
-    char currentChar;
-    char buffer[SIZE_STR];
+    char currentChar = '\0';
+    char buffer[SIZE_STR] = {"\0"};
     struct BinTreeNode *binTreeRoot = NULL;
     while ((currentChar = fgetc(file)) != EOF){
         if (currentChar == ',' || currentChar == '\n' || currentChar == '\0'){
@@ -150,7 +158,6 @@ void readFileFormCSF(const char* pathCSV, struct DynamicArray *arrCSVTable, stru
             // Если первый ряд, то запоминаем название столбцов
             if (numRows == 0){
                 if (currentChar == '\n'){
-                    buffer[bufferIndex-1] = '\0';
                     addToDynamicArray(arrColumnsName, &buffer);
                     maxColumns = numColumns;
                 }
@@ -174,8 +181,8 @@ void readFileFormCSF(const char* pathCSV, struct DynamicArray *arrCSVTable, stru
                     printf("Error, readFileFormCSF()num3, \"\\0\"");
                     exit(EXIT_FAILURE); 
                 }
-                char *rowsName    = arrRowsName->array    + (numRows-1)    * arrRowsName->elementSize;
-                char *columnsName = arrColumnsName->array + (numColumns-1) * arrColumnsName->elementSize;
+                char *rowsName    = (char *)arrRowsName->array + (numRows - 1) * arrRowsName->elementSize;
+                char *columnsName = (char*)arrColumnsName->array + (numColumns-1) * arrColumnsName->elementSize;
                 int lengthAddress = strlen(rowsName) + strlen(columnsName) + 1;
                 char *address     = calloc(lengthAddress, SIZEOF_CHAR);
                 if (address == NULL){
@@ -186,14 +193,14 @@ void readFileFormCSF(const char* pathCSV, struct DynamicArray *arrCSVTable, stru
                 strcat(address, rowsName);
                 // Создание дерева
                 if (binTreeRoot == NULL){
-                    binTreeRoot = initBinTree(address, &(arrCSVTable->size));
+                    binTreeRoot = initBinTree(address, (arrCSVTable->size));
                 }
                 else {
-                    addToBinTree(binTreeRoot, initBinTree(address, &(arrCSVTable->size)));
+                    addToBinTree(binTreeRoot, initBinTree(address, (arrCSVTable->size)));
                 }
                 // Если формула, то запоминаем ее индекс
                 if (buffer[0] == '='){
-                    addToDynamicArray(arrIdFormuls, &(arrCSVTable->size));
+                    addToDynamicArray(arrIdFormuls, &arrCSVTable->size);
                 }
                 addToDynamicArray(arrCSVTable, initCSVFormat(buffer));
                 free(address);
@@ -219,9 +226,15 @@ void readFileFormCSF(const char* pathCSV, struct DynamicArray *arrCSVTable, stru
             if (currentChar == ' '){
                 printf("Error, readFileFormCSF()num7, invalid table, space");
                 exit(EXIT_FAILURE);
-            }          
-            buffer[bufferIndex++] = currentChar;
+            }
+            if (currentChar != '\r') {
+                buffer[bufferIndex++] = currentChar;
+            } 
         }   
+    }
+    if (numColumns != maxColumns){
+         printf("Error, readFileFormCSF()num5, invalid table, numColumns(%d) != maxColumns(%d) in numRows(%d)", numColumns, maxColumns, numRows);
+         exit(EXIT_FAILURE);
     }
     buffer[bufferIndex] = '\0';
     if (buffer[0]=='\0' && numRows == 1){
@@ -229,8 +242,8 @@ void readFileFormCSF(const char* pathCSV, struct DynamicArray *arrCSVTable, stru
         exit(EXIT_FAILURE); 
     }
     if (buffer[0] != '\0'){
-        char *rowsName = arrRowsName->array + (numRows-1) * arrRowsName->elementSize;
-        char *columnsName = arrColumnsName->array + (numColumns-1) *    arrColumnsName->elementSize;
+        char *rowsName = (char*)arrRowsName->array + (numRows-1) * arrRowsName->elementSize;
+        char *columnsName = (char*)arrColumnsName->array + (numColumns-1) *    arrColumnsName->elementSize;
         int lengthAddress = strlen(rowsName) + strlen(columnsName) + 1;
         char *address = calloc(lengthAddress, SIZEOF_CHAR);
         if (address == NULL){
@@ -239,14 +252,17 @@ void readFileFormCSF(const char* pathCSV, struct DynamicArray *arrCSVTable, stru
         }    
         strcpy(address, columnsName);
         strcat(address, rowsName);
-        addToBinTree(binTreeRoot, initBinTree(address, &(arrCSVTable->size)));
+        addToBinTree(binTreeRoot, initBinTree(address, (arrCSVTable->size)));
         if (buffer[0] == '='){
-            addToDynamicArray(arrIdFormuls, &(arrCSVTable->size));
+            addToDynamicArray(arrIdFormuls, &arrCSVTable->size);
         }
-        addToDynamicArray(arrCSVTable, initCSVFormat(buffer)); 
+        struct CSVFormat* temp = initCSVFormat(buffer);
+        addToDynamicArray(arrCSVTable, temp);
+        free(temp);
         free(address);   
     }
     arrAddressesId = returnDynamicArrayFromBinTree(binTreeRoot, arrAddressesId);
+    free(binTreeRoot);
     fclose(file);
 }
 // Резделение формулы "=ARG1OPARG2" на три подстроки "ARG1" "OP" "ARG2"
@@ -325,7 +341,7 @@ int isValidAddress(const char *address){
 }
 // Поиск по формуле
 long long resultValueFromCSVFormula(struct DynamicArray *arrCSVTable, size_t *id, struct DynamicArray *arrAddressesId){
-    struct CSVFormat * currentCSV = (arrCSVTable->array) + (*id) * arrCSVTable->elementSize;
+    struct CSVFormat * currentCSV = (((struct CSVFormat*)arrCSVTable->array + (*id)));
     if (currentCSV->formula==NULL){
         return currentCSV->value;
     }
@@ -356,7 +372,10 @@ long long resultValueFromCSVFormula(struct DynamicArray *arrCSVTable, size_t *id
         intOperand1 = atoi(strOperand1);
     }
     else {
-        struct CSVAddressId *CSVid = bsearch(initCSVAddressId(strOperand1, 0), arrAddressesId->array, arrAddressesId->size, arrAddressesId->elementSize, comparisonCSVAddressId);
+        struct CSVAddressId *initCsvAddrId = initCSVAddressId(strOperand1, 0);
+        struct CSVAddressId *CSVid = bsearch(initCsvAddrId, arrAddressesId->array, arrAddressesId->size, arrAddressesId->elementSize, comparisonCSVAddressId);
+        free(initCsvAddrId->address);
+        free(initCsvAddrId);
         if (CSVid == NULL){
             printf("Error, resultValueFromCSVFormula(), invalid address");
             exit(EXIT_FAILURE);
@@ -376,7 +395,10 @@ long long resultValueFromCSVFormula(struct DynamicArray *arrCSVTable, size_t *id
         intOperand2 = atoi(strOperand2);
     }
     else {
-        struct CSVAddressId* CSVid = bsearch(initCSVAddressId(strOperand2, 0), arrAddressesId->array, arrAddressesId->size, arrAddressesId->elementSize, comparisonCSVAddressId);
+        struct CSVAddressId* initCsvAddrId = initCSVAddressId(strOperand2, 0);
+        struct CSVAddressId* CSVid = bsearch(initCsvAddrId, arrAddressesId->array, arrAddressesId->size, arrAddressesId->elementSize, comparisonCSVAddressId);
+        free(initCsvAddrId->address);
+        free(initCsvAddrId);
         if (CSVid == NULL){
             printf("Error, resultValueFromCSVFormula(), invalid address");
             exit(EXIT_FAILURE);
@@ -405,7 +427,7 @@ long long resultValueFromCSVFormula(struct DynamicArray *arrCSVTable, size_t *id
             exit(EXIT_FAILURE);  
 
     }
-    free(((struct CSVFormat*)((char*)(arrCSVTable->array) + (*id) * arrCSVTable->elementSize))->formula);
+    free(currentCSV->formula);
     free(strOperand1);
     free(strOperator);
     free(strOperand2);
@@ -417,7 +439,7 @@ long long resultValueFromCSVFormula(struct DynamicArray *arrCSVTable, size_t *id
 void calculatorCSV(struct DynamicArray *arrCSVTable, struct DynamicArray *arrAddressesId, struct DynamicArray *arrIdFormuls){
     for (size_t i = 0; i < arrIdFormuls->size; i++)
     {
-        size_t *idFormula = (arrIdFormuls->array) + i * arrIdFormuls->elementSize; 
+        size_t *idFormula = (size_t*)(arrIdFormuls->array) + i;
         long long result = resultValueFromCSVFormula(arrCSVTable, idFormula, arrAddressesId);
     }
     
@@ -436,47 +458,44 @@ void printCSVTable(const struct DynamicArray *arrCSVTable, const struct DynamicA
     cntrow = cntcol = 0; 
     int j = 0;
     while(j < arrCSVTable->size){   
-        if (cntcol == nColomns){
-           cntcol = 0;
-           cntrow++;
-           printf("\n"); 
-        }
+
         if (cntcol == 0){
-            printf("%s",(arrRowsName->array + cntrow * arrRowsName->elementSize));
+            printf("%s",((char*)arrRowsName->array + cntrow * arrRowsName->elementSize));
         }
-        printf(",%d", (((struct CSVFormat*)(arrCSVTable->array + j++ * arrCSVTable->elementSize))->value));
+        printf(",%d", (((struct CSVFormat*)((struct CSVFormat*)arrCSVTable->array + j++))->value));
         cntcol++;
+        if (cntcol == nColomns) {
+            cntcol = 0;
+            cntrow++;
+            printf("\n");
+        }
     }
 }
 // Основной цикл работы с таблицей CSV
 void processCSV(const char* pathCSV){
     //Инициализация динамических массивов
     struct DynamicArray arrColumnsName; //Имена колонок
-    struct DynamicArray arrRowsName;     //Имена рядов
+    struct DynamicArray arrRowsName;    //Имена рядов
     struct DynamicArray arrCSVTable;    //Содержимое таблицы без названий колонок и рядов 
     struct DynamicArray arrAddressesId; //Все возможные адреса с индексом в таблице
     struct DynamicArray arrIdFormuls;   //Индекс всех ячеек таблицы, в которых есть формула
 
     //Создание размеров и выделение памяти для массивов
-    initDynamicArray(&arrColumnsName, SIZE_CAPASITY_COL     , SIZEOF_CHAR);
-    initDynamicArray(&arrRowsName   , SIZE_CAPASITY_ROW     , SIZEOF_CHAR); 
-    initDynamicArray(&arrCSVTable   , SIZE_CAPASITY_TABLE   , SIZEOF_CSV_FORMAT);
-    initDynamicArray(&arrAddressesId, SIZE_CAPASITY_ADDRESS , SIZEOF_CSV_ADDRESS_ID);
-    initDynamicArray(&arrIdFormuls  , SIZE_CAPASITY_FORMULS , sizeof(int));
+    initDynamicArray(&arrColumnsName, SIZE_CAPASITY_COL     , sizeof(char*));
+    initDynamicArray(&arrRowsName   , SIZE_CAPASITY_ROW     , sizeof(char*));
+    initDynamicArray(&arrCSVTable   , SIZE_CAPASITY_TABLE   , sizeof(struct CSVFormat));
+    initDynamicArray(&arrAddressesId, SIZE_CAPASITY_ADDRESS , sizeof(struct CSVAddressId));
+    initDynamicArray(&arrIdFormuls  , SIZE_CAPASITY_FORMULS , sizeof(size_t));
 
     //Чтение CSV файла и формирование структур для работы с CSV таблицей
     readFileFormCSF(pathCSV, &arrCSVTable, &arrColumnsName, &arrRowsName, &arrAddressesId, &arrIdFormuls);
     calculatorCSV(&arrCSVTable, &arrAddressesId, &arrIdFormuls);
     printCSVTable(&arrCSVTable, &arrColumnsName, &arrRowsName);
 
-    for (size_t i = 0; i < arrCSVTable.size; i++){
-    struct CSVFormat *temp = (struct CSVFormat*)((char*)arrCSVTable.array + i * arrCSVTable.elementSize);
-    free(temp->formula);
-    }
+
     freeDynamicArray(&arrCSVTable);
     for (size_t i = 0; i < arrAddressesId.size; i++){
-    struct CSVAddressId *temp = arrAddressesId.array + i * arrAddressesId.elementSize;
-    free(temp->address);
+        free( ((struct CSVAddressId*)arrAddressesId.array + i)->address  );
     }
     freeDynamicArray(&arrAddressesId);
     freeDynamicArray(&arrIdFormuls);

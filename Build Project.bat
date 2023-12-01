@@ -1,1 +1,0 @@
-gcc -o CSVReader CSVReader.c CSVfunction.c DynamicArr.c

@@ -2,10 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #ifndef DYNAMICARR_H
 #define DYNAMICARR_H
-
 #include <stddef.h>
 
 struct DynamicArray {

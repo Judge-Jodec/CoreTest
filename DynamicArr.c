@@ -36,8 +36,8 @@ void addToDynamicArray(struct DynamicArray *dynArray, const void *element){
         } 
         dynArray->capacity = newCapacity;
     }
-    char *destination = dynArray->array + dynArray->size * dynArray->elementSize;
-    destination = memcpy(destination, element, dynArray->elementSize);
+    char *destination = (char*)dynArray->array + dynArray->size * dynArray->elementSize;
+    memcpy(destination, element, dynArray->elementSize);
     if(destination == NULL){
         printf("Error, addToDynamicArray(), memcpy == NULL");
         exit(EXIT_FAILURE);

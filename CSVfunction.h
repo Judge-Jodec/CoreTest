@@ -10,14 +10,11 @@
 
 #define SIZE_STR                1024U
 #define SIZEOF_CHAR             256U
-#define SIZEOF_CSV_FORMAT       staticunSizeCSVFormat
-#define SIZEOF_CSV_ADDRESS_ID   staticunSizeCSVAddressId
-#define SIZEOF_BIN_TREE         staticunSizeBinTree
-#define SIZE_CAPASITY_ADDRESS   1024U
-#define SIZE_CAPASITY_TABLE     1024U
-#define SIZE_CAPASITY_ROW       1024U
-#define SIZE_CAPASITY_COL       1024U
-#define SIZE_CAPASITY_FORMULS   1024U
+#define SIZE_CAPASITY_ADDRESS   32U
+#define SIZE_CAPASITY_TABLE     32U
+#define SIZE_CAPASITY_ROW       32U
+#define SIZE_CAPASITY_COL       32U
+#define SIZE_CAPASITY_FORMULS   32U
 #define TYPE_VALUE_TABLE        int
 
 // Структура для хранения формата CSV
@@ -26,13 +23,11 @@ struct CSVFormat{
     TYPE_VALUE_TABLE value;
     short int was_detect;
 };
-static size_t staticunSizeCSVFormat = sizeof(struct CSVFormat);
 // Структура для хранения адреса и индекса CSV
 struct CSVAddressId{
     char *address;  
     size_t id;
 };
-static size_t staticunSizeCSVAddressId = sizeof(struct CSVAddressId);
 // Структура корня бинарного дерева 
 //!только! для структуры CSVAddressId
 // левый меньше, правый больше    
@@ -41,11 +36,10 @@ struct BinTreeNode{
     struct BinTreeNode *left;
     struct BinTreeNode *right;  
 };
-static size_t staticunSizeBinTree = sizeof(struct BinTreeNode);
 // Инициализация структуры CSVAddressId
 struct CSVAddressId* initCSVAddressId(const char* address, const size_t id);
 // Инициализация корня бинарного дерева
-struct BinTreeNode* initBinTree(const char* address, const size_t *id);
+struct BinTreeNode *initBinTree(const char* address, const size_t id);
 // Деление адреса типа А1 на две строки типа А и 1
 void splitString(const char *input, char **letters, char **digits);
 // Сравнение двух CSVAddressId
@@ -53,9 +47,9 @@ int comparisonCSVAddressId(const void* a, const void* b);
 // Добавление в бинарное дерево
 struct BinTreeNode* addToBinTree(struct BinTreeNode* root, struct BinTreeNode* newNode);
 // Метод возврата сортированного массив по бинарному дереву (отсортированный массив)
-struct DynamicArray *returnDynamicArrayFromBinTree(const struct BinTreeNode* root, struct DynamicArray * arr);
+struct DynamicArray *returnDynamicArrayFromBinTree(struct BinTreeNode* root, struct DynamicArray * arr);
 // Инициализация CSVFormat
-void * initCSVFormat(const char *str);
+struct CSVFormat * initCSVFormat(const char *str);
 // Чтение файла CSV и формирование таблиц CSV 
 //(таблица, названия столбцов, названия рядов, все возможные адреса ячеек таблицы и индексы всех ячеек с формулами)
 void readFileFormCSF(const char* pathCSV, struct DynamicArray *arrCSVTable, struct DynamicArray *arrColumnsName,struct DynamicArray *arrRowsName, struct DynamicArray *arrAddressesId, struct DynamicArray *arrIdFormuls);
